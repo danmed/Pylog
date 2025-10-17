@@ -37,19 +37,17 @@ All incoming logs are stored persistently in **flat files**, with a separate fil
    Open `pylog.py` and edit the configuration variables at the top of the file.
 
 
+Example configuration
 
-# Example configuration
-
-SYSLOG_PORTS = [514, 1514, 5140]
-LOG_DIRECTORY = "syslog_logs"
-
+`SYSLOG_PORTS = [514, 1514, 5140]`
+`LOG_DIRECTORY = "syslog_logs"`
 
 3. **Run the Server:**
 Open your terminal, navigate to the directory where you saved the file, and execute the script:
 
 
 
-**python3 pylog.py**
+`python3 pylog.py
 
 
 The script will automatically create the log directory if it doesn't exist.
