@@ -1,4 +1,4 @@
-# Simple Syslog Server with Web UI (Multi-port)
+# Pylog - Simple Syslog Server with Web UI (Multi-port)
 
 A lightweight, single-file syslog server written in Python that provides a clean, modern web interface for viewing, searching, and filtering syslog messages in real-time. This tool is designed for easy deployment and can listen on **multiple UDP ports simultaneously**.
 
@@ -27,10 +27,10 @@ All incoming logs are stored persistently in **flat files**, with a separate fil
 ## How to Use
 
 1. **Download the File:**
-   Save the `syslog_server.py` script to your local machine.
+   Save the `pylog.py` script to your local machine.
 
 2. **Configure Ports & Log Directory:**
-   Open `syslog_server.py` and edit the configuration variables at the top of the file.
+   Open `pylog.py` and edit the configuration variables at the top of the file.
 
 
 
@@ -45,7 +45,7 @@ Open your terminal, navigate to the directory where you saved the file, and exec
 
 
 
-python3 syslog_server.py
+python3 pylog.py
 
 
 The script will automatically create the log directory if it doesn't exist.
