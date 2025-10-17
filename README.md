@@ -6,7 +6,7 @@ A lightweight, single-file syslog server written in Python that provides a clean
 
 The web interface showing live log data.
 
-Features
+# Features
 
 UDP Syslog Listener: Listens on a configurable UDP port (default 514) for incoming syslog messages.
 
@@ -22,19 +22,19 @@ Self-Contained: The entire application—server and web UI—is contained in a s
 
 In-Memory Storage: Logs are stored in a capped, in-memory list for simplicity and speed.
 
-Requirements
+# Requirements
 
 Python 3.x
 
-How to Use
+# How to Use
 
-Download the File:
-Save the syslog_server.py script to your local machine.
+# Download the File:
+Save the pylog.py script to your local machine.
 
-Run the Server:
+# Run the Server:
 Open your terminal, navigate to the directory where you saved the file, and execute the script:
 
-python3 syslog_server.py
+python3 pylog.py
 
 
 Note on Permissions: The standard syslog port 514 is a privileged port. On most systems, you will need administrator/root rights to use it. You have two options:
@@ -46,14 +46,14 @@ sudo python3 syslog_server.py
 
 Change the Port: Edit syslog_server.py and change the SYSLOG_PORT variable to a number greater than 1024 (e.g., 5140).
 
-Access the Web Interface:
+# Access the Web Interface:
 Open your web browser and navigate to:
 http://localhost:8000
 
-Configure Log Sources:
+# Configure Log Sources:
 Configure your network devices (routers, switches, firewalls), servers, or applications to send their syslog messages to the IP address of the computer running the script, using the configured UDP port.
 
-Configuration
+# Configuration
 
 You can easily change the server settings by editing the following variables at the top of the syslog_server.py script:
 
@@ -67,7 +67,7 @@ SYSLOG_PORT: The UDP port for the syslog listener (default: 514).
 
 MAX_LOGS: The maximum number of log entries to keep in memory (default: 2000).
 
-How It Works
+# How It Works
 
 The script operates by running two server components concurrently in separate threads:
 
