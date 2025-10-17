@@ -45,7 +45,7 @@ Open your terminal, navigate to the directory where you saved the file, and exec
 
 
 
-python3 pylog.py
+**python3 pylog.py**
 
 
 The script will automatically create the log directory if it doesn't exist.
@@ -54,12 +54,12 @@ The script will automatically create the log directory if it doesn't exist.
 
 
 
-sudo python3 syslog_server.py
+**sudo python3 syslog_server.py**
 
 
 4. **Access the Web Interface:**
 Open your web browser and navigate to:
-`http://localhost:8000`
+**`http://localhost:8000`**
 
 5. **Configure Log Sources:**
 Configure your devices to send syslog messages to the IP address of the computer running the script, using one of the configured UDP ports.
