@@ -4,6 +4,10 @@ A lightweight, single-file syslog server written in Python that provides a clean
 
 All incoming logs are stored persistently in **flat files**, with a separate file for each listening port (e.g., `514.log`, `1514.log`).
 
+## Screenshot
+<img width="1613" height="454" alt="image" src="https://github.com/user-attachments/assets/60d56236-a71c-4da8-ac69-269f770d8fd6" />
+
+
 ## Features
 
 * **Multi-port UDP Syslog Listener:** Listens on a configurable list of UDP ports for incoming syslog messages.
