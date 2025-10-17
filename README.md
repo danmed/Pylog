@@ -40,24 +40,19 @@ All incoming logs are stored persistently in **flat files**, with a separate fil
 Example configuration
 
 `SYSLOG_PORTS = [514, 1514, 5140]`
+
 `LOG_DIRECTORY = "syslog_logs"`
 
 3. **Run the Server:**
 Open your terminal, navigate to the directory where you saved the file, and execute the script:
 
-
-
-`python3 pylog.py
-
+`python3 pylog.py`
 
 The script will automatically create the log directory if it doesn't exist.
 
 **Note on Permissions:** To use privileged ports (below 1024), you must run the script with administrator/root rights.
 
-
-
 **sudo python3 syslog_server.py**
-
 
 4. **Access the Web Interface:**
 Open your web browser and navigate to:
