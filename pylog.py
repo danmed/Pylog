@@ -109,7 +109,7 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Syslog Viewer Pro</title>
+    <title>Pylog - Syslog Viewer</title>
     <style>
         :root {
             --bg-color: #1e1e2e; --base-color: #cdd6f4; --surface-color: #313244;
@@ -157,7 +157,7 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
 <body>
     <div class="container">
         <div class="header">
-            <h1>Log Stream</h1>
+            <h1>PyLog Stream</h1>
         </div>
         <div class="log-container">
             <table>
