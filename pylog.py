@@ -109,30 +109,55 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Syslog Viewer</title>
+    <title>Syslog Viewer Pro</title>
     <style>
-        :root { --bg-color: #1a1a1a; --text-color: #e0e0e0; --border-color: #444; --header-bg: #2c2c2c; --search-bg: #333; --search-text: #fff; --row-hover: #2a2a2a; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; background-color: var(--bg-color); color: var(--text-color); font-size: 14px; }
+        :root {
+            --bg-color: #1e1e2e; --base-color: #cdd6f4; --surface-color: #313244;
+            --overlay-color: #45475a; --header-bg: #181825; --border-color: #585b70;
+            --green: #a6e3a1; --mauve: #cba6f7; --red: #f38ba8; --peach: #fab387;
+        }
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0; background-color: var(--bg-color); color: var(--base-color);
+            font-size: 14px; line-height: 1.6;
+        }
         .container { display: flex; flex-direction: column; height: 100vh; }
-        .header { background-color: var(--header-bg); padding: 12px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; }
-        .header h1 { margin: 0; font-size: 1.2em; }
-        .search-box { margin-left: auto; }
-        #searchInput { background-color: var(--search-bg); color: var(--search-text); border: 1px solid var(--border-color); border-radius: 5px; padding: 8px 12px; width: 300px; }
-        .log-container { flex-grow: 1; overflow-y: auto; padding: 0; }
+        .header {
+            background-color: var(--header-bg); padding: 16px 24px;
+            border-bottom: 1px solid var(--border-color); display: flex; align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 10;
+        }
+        .header h1 { margin: 0; font-size: 1.5em; color: var(--mauve); letter-spacing: 1px;}
+        .log-container { flex-grow: 1; overflow: auto; }
         table { border-collapse: collapse; width: 100%; }
-        th, td { text-align: left; padding: 10px 20px; border-bottom: 1px solid var(--border-color); white-space: pre-wrap; word-break: break-all; }
-        thead { position: sticky; top: 0; background-color: var(--header-bg); }
-        tbody tr:hover { background-color: var(--row-hover); }
-        .col-timestamp { width: 160px; } .col-source { width: 180px; } .col-port {width: 100px; }
+        th, td {
+            text-align: left; padding: 12px 24px;
+            border-bottom: 1px solid var(--surface-color);
+            white-space: pre-wrap; word-break: break-word;
+        }
+        thead { position: sticky; top: 0; z-index: 5; }
+        thead tr:first-child th {
+             background-color: var(--header-bg);
+             font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        thead tr:last-child th { background-color: var(--surface-color); padding: 8px 16px; }
+        tbody tr { transition: background-color 0.2s ease; }
+        tbody tr:hover { background-color: var(--overlay-color); }
+        .col-timestamp { width: 180px; color: var(--green); }
+        .col-source { width: 200px; color: var(--peach); }
+        .col-port { width: 120px; color: var(--red); }
+        .column-filter {
+            width: 100%; box-sizing: border-box; background-color: var(--overlay-color);
+            color: var(--base-color); border: 1px solid var(--border-color);
+            border-radius: 5px; padding: 8px 10px; font-size: 13px;
+        }
+        .column-filter::placeholder { color: #7f849c; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>Syslog Viewer</h1>
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="Search logs...">
-            </div>
+            <h1>Log Stream</h1>
         </div>
         <div class="log-container">
             <table>
@@ -143,6 +168,12 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
                         <th class="col-port">Dest Port</th>
                         <th class="col-message">Message</th>
                     </tr>
+                    <tr>
+                        <th><input type="text" class="column-filter" id="filterTimestamp" placeholder="Filter timestamp..."></th>
+                        <th><input type="text" class="column-filter" id="filterSource" placeholder="Filter source..."></th>
+                        <th><input type="text" class="column-filter" id="filterPort" placeholder="Filter port..."></th>
+                        <th><input type="text" class="column-filter" id="filterMessage" placeholder="Filter message..."></th>
+                    </tr>
                 </thead>
                 <tbody id="logTableBody"></tbody>
             </table>
@@ -150,42 +181,60 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
     </div>
     <script>
         const logTableBody = document.getElementById('logTableBody');
-        const searchInput = document.getElementById('searchInput');
-        let lastLogCount = 0;
+        const filterInputs = document.querySelectorAll('.column-filter');
+        const filterTimestamp = document.getElementById('filterTimestamp');
+        const filterSource = document.getElementById('filterSource');
+        const filterPort = document.getElementById('filterPort');
+        const filterMessage = document.getElementById('filterMessage');
+        let logsCache = [];
+        let viewNeedsUpdate = true;
 
         async function fetchLogs() {
             try {
                 const response = await fetch('/logs');
-                const logs = await response.json();
+                const newLogs = await response.json();
 
-                if (logs.length !== lastLogCount) {
-                    updateTable(logs);
-                    lastLogCount = logs.length;
+                if (JSON.stringify(newLogs) !== JSON.stringify(logsCache)) {
+                    logsCache = newLogs;
+                    viewNeedsUpdate = true;
+                    updateTable();
                 }
             } catch (error) {
                 console.error('Error fetching logs:', error);
             }
         }
 
-        function updateTable(logs) {
-            const searchTerm = searchInput.value.toLowerCase();
-            let tableHtml = '';
+        function updateTable() {
+            const timestampFilter = filterTimestamp.value.toLowerCase();
+            const sourceFilter = filterSource.value.toLowerCase();
+            const portFilter = filterPort.value.toLowerCase();
+            const messageFilter = filterMessage.value.toLowerCase();
 
-            for (const log of logs) {
+            let tableHtml = '';
+            for (const log of logsCache) {
+                const logTimestamp = log.timestamp.toLowerCase();
+                const logSource = `${log.source_ip}:${log.source_port}`.toLowerCase();
+                const logPort = String(log.destination_port).toLowerCase();
                 const logMessage = log.message.toLowerCase();
-                const sourceIp = log.source_ip.toLowerCase();
-                if (logMessage.includes(searchTerm) || sourceIp.includes(searchTerm)) {
+
+                if (
+                    logTimestamp.includes(timestampFilter) &&
+                    logSource.includes(sourceFilter) &&
+                    logPort.includes(portFilter) &&
+                    logMessage.includes(messageFilter)
+                ) {
                     tableHtml += `
                         <tr>
-                            <td>${log.timestamp}</td>
-                            <td>${log.source_ip}:${log.source_port}</td>
-                            <td>${log.destination_port}</td>
+                            <td class="col-timestamp">${log.timestamp}</td>
+                            <td class="col-source">${log.source_ip}:${log.source_port}</td>
+                            <td class="col-port">${log.destination_port}</td>
                             <td>${escapeHtml(log.message)}</td>
                         </tr>
                     `;
                 }
             }
             logTableBody.innerHTML = tableHtml;
+            viewNeedsUpdate = false;
         }
 
         function escapeHtml(unsafe) {
@@ -198,8 +247,11 @@ class WebServerHandler(http.server.SimpleHTTPRequestHandler):
                  .replace(/'/g, "&#039;");
         }
 
-        searchInput.addEventListener('input', fetchLogs);
-        setInterval(fetchLogs, 3000); // Refresh every 3 seconds
+        filterInputs.forEach(input => {
+            input.addEventListener('input', updateTable);
+        });
+
+        setInterval(fetchLogs, 3000); // Refresh data every 3 seconds
         fetchLogs(); // Initial fetch
     </script>
 </body>
