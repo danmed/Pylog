@@ -1,20 +1,17 @@
-# Simple Syslog Server with Web GUI
+# Simple Syslog Server with Web GUI (Multi-port Version)
 #
-# This script runs two servers in parallel:
-# 1. A UDP server on port 514 to listen for and collect syslog messages.
-# 2. A TCP server on port 8000 to serve a web interface for viewing the logs.
+# This script runs multiple servers in parallel:
+# 1. A UDP server for EACH port specified in the SYSLOG_PORTS list to collect syslog messages.
+# 2. A single TCP server on port 8000 to serve a web interface for viewing all collected logs.
 #
 # To Run:
 # 1. Save this file as `syslog_server.py`.
-# 2. Run from your terminal: `python3 syslog_server.py`
-# 3. Open your web browser and navigate to http://localhost:8000
-# 4. Configure your devices/services to send syslog messages to this computer's IP address on port 514.
+# 2. Edit the `SYSLOG_PORTS` list below to include all the UDP ports you want to monitor.
+# 3. Run from your terminal: `python3 syslog_server.py`
+# 4. Open your web browser and navigate to http://localhost:8000
 #
-# Note: Running a server on port 514 might require administrator/root privileges.
-# If you get a "Permission denied" error, you can either:
-#   - Run with sudo: `sudo python3 syslog_server.py`
-#   - Or change SYSLOG_PORT to a port number above 1024 (e.g., 1514) and configure your
-#     devices to send logs to that new port.
+# Note: Using ports below 1024 (like the standard 514) might require administrator/root privileges.
+# If you get a "Permission denied" error, try running with sudo: `sudo python3 syslog_server.py`
 
 import socketserver
 import threading
@@ -26,10 +23,11 @@ from http.server import SimpleHTTPRequestHandler, HTTPServer
 WEB_HOST = "0.0.0.0"
 WEB_PORT = 8000
 SYSLOG_HOST = "0.0.0.0"
-SYSLOG_PORT = 514 # Standard syslog port
+# --- MODIFIED: List of UDP ports to listen on for syslog messages ---
+SYSLOG_PORTS = [514, 1514, 5140]
 
 # --- In-memory Log Storage ---
-# A thread-safe way to store logs.
+# A thread-safe way to store logs from all ports.
 LOGS_LOCK = threading.Lock()
 LOGS = []
 MAX_LOGS = 2000 # Limit the number of logs stored in memory
@@ -217,7 +215,7 @@ HTML_CONTENT = """
 # --- Syslog Server Implementation ---
 class SyslogUDPHandler(socketserver.BaseRequestHandler):
     """
-    Handles incoming syslog messages.
+    Handles incoming syslog messages. This handler is used by all syslog servers.
     """
     def handle(self):
         try:
@@ -276,19 +274,6 @@ class WebUIHandler(SimpleHTTPRequestHandler):
             self.end_headers()
 
 
-def run_syslog_server():
-    """Starts the syslog UDP server."""
-    try:
-        server = socketserver.UDPServer((SYSLOG_HOST, SYSLOG_PORT), SyslogUDPHandler)
-        print(f"Syslog server listening on UDP {SYSLOG_HOST}:{SYSLOG_PORT}")
-        server.serve_forever(poll_interval=0.5)
-    except PermissionError:
-        print(f"\n[ERROR] Permission denied to bind to port {SYSLOG_PORT}.")
-        print("Try running the script with 'sudo' or changing SYSLOG_PORT to a value > 1024.\n")
-    except Exception as e:
-        print(f"Failed to start syslog server: {e}")
-
-
 def run_web_server():
     """Starts the web interface HTTP server."""
     try:
@@ -299,22 +284,39 @@ def run_web_server():
         print(f"Failed to start web server: {e}")
 
 
+# --- MODIFIED: Main execution block to handle multiple ports ---
 if __name__ == "__main__":
-    # Run both servers in separate threads so they don't block each other.
-    syslog_thread = threading.Thread(target=run_syslog_server)
+    # --- Start a thread for each syslog port ---
+    syslog_threads = []
+    print("Starting syslog listeners...")
+    for port in SYSLOG_PORTS:
+        # We need a function scope to properly capture the 'port' variable for the thread
+        def start_server_for_port(p=port):
+            try:
+                server = socketserver.UDPServer((SYSLOG_HOST, p), SyslogUDPHandler)
+                print(f"-> Syslog server listening on UDP {SYSLOG_HOST}:{p}")
+                server.serve_forever(poll_interval=0.5)
+            except PermissionError:
+                print(f"[ERROR] Permission denied to bind to port {p}. Try running with 'sudo'.")
+            except Exception as e:
+                print(f"[ERROR] Failed to start syslog server on port {p}: {e}")
+
+        thread = threading.Thread(target=start_server_for_port)
+        thread.daemon = True
+        thread.start()
+        syslog_threads.append(thread)
+
+    # --- Start the web server in its own thread ---
     web_thread = threading.Thread(target=run_web_server)
-
-    syslog_thread.daemon = True
     web_thread.daemon = True
-
-    syslog_thread.start()
     web_thread.start()
 
-    print("Servers started. Press Ctrl+C to exit.")
+    print("\nAll servers started. Press Ctrl+C to exit.")
     
     # Keep the main thread alive to handle Ctrl+C
     try:
-        while True:
-            pass
+        # This is a simple way to wait for the web_thread, or any other long-running thread
+        web_thread.join()
     except KeyboardInterrupt:
         print("\nShutting down servers...")
+
