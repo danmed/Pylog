@@ -38,7 +38,7 @@ All incoming logs are stored persistently in **flat files**, with a separate fil
 
 
 
-Example configuration
+# Example configuration
 
 SYSLOG_PORTS = [514, 1514, 5140]
 LOG_DIRECTORY = "syslog_logs"
